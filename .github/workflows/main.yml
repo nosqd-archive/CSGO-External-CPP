@@ -20,6 +20,12 @@ jobs:
       - name: Build solution
         run: msbuild.exe .\MyExternal.sln -p:Configuration=Release
         
+      - name: Download DXSDK
+        run: wget https://download.microsoft.com/download/a/e/7/ae743f1f-632b-4809-87a9-aa1bb3458e31/DXSDK_Jun10.exe
+        
+      - name: Install DXSDK
+        run: .\DXSDK_Jun10.exe /U
+        
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
