@@ -33,14 +33,13 @@ struct values
 struct hacks_states {
     bool bhop = false;
     BYTE bhopState = NULL;
+
+    bool thirdperson = false;
+
+    int fov = 0;
+    int defaultFov = NULL;
 } hacks_states;
 
-void loadLocalPlayer() {
-    if (val.localPlayer == NULL)
-        while (val.localPlayer == NULL)
-            val.localPlayer = memory.readMem<DWORD>(val.gameModule + dwLocalPlayer);
-
-}
 
 void BHop(DWORD gameModule, DWORD localPlayer) {
     hacks_states.bhopState = memory.readMem<BYTE>(localPlayer + m_fFlags);
@@ -48,6 +47,26 @@ void BHop(DWORD gameModule, DWORD localPlayer) {
         memory.writeMem<DWORD>(gameModule + dwForceJump, 6);
 
     Sleep(1);
+}
+
+void ThirdPerson(DWORD gameModule, DWORD localPlayer, bool enabled) {
+    memory.writeMem<int>(localPlayer + m_iObserverMode, enabled ? 1 : 0);
+}
+
+void FOV(DWORD gameModule, DWORD localPlayer) {
+    if (hacks_states.fov > 0) {
+        if (hacks_states.defaultFov == NULL) {
+            hacks_states.defaultFov = memory.readMem<int>(localPlayer + m_iDefaultFOV);
+        }
+
+        memory.writeMem<int>(localPlayer + m_iDefaultFOV, hacks_states.fov);
+    }
+    else {
+        if (hacks_states.defaultFov != NULL) {
+            memory.writeMem<int>(localPlayer + m_iDefaultFOV, hacks_states.defaultFov);
+
+        }
+    }
 }
 
 
@@ -109,13 +128,21 @@ int main(int, char**)
             break;
 
         // Functional
-        loadLocalPlayer();
+        val.localPlayer = memory.readMem<DWORD>(val.gameModule + dwLocalPlayer);
+
+        if (hacks_states.bhop) BHop(val.gameModule, val.localPlayer);
+        ThirdPerson(val.gameModule, val.localPlayer, hacks_states.thirdperson);
+        FOV(val.gameModule, val.localPlayer);
 
         if (GetAsyncKeyState(VK_F1) & 1) {
             hacks_states.bhop = !hacks_states.bhop;
         }
 
-        if (hacks_states.bhop) BHop(val.gameModule, val.localPlayer);
+        if (GetAsyncKeyState(0x56) & 1) {
+            hacks_states.thirdperson = !hacks_states.thirdperson;
+        }
+
+        
 
         ImGui_ImplDX9_NewFrame();
         ImGui_ImplWin32_NewFrame();
@@ -134,6 +161,8 @@ int main(int, char**)
             ImGui::SetWindowPos(ImVec2(0, 0), 0);
 
             ImGui::Checkbox(XorStr("BunnyHop (F1)"), &hacks_states.bhop);              
+            ImGui::Checkbox(XorStr("ThirdPerson (V)"), &hacks_states.thirdperson);    
+            ImGui::SliderInt("FOV", &hacks_states.fov, 0, 255);
 
             ImGui::End();
         }
